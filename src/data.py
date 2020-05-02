@@ -14,8 +14,6 @@ DEV_FN = os.path.join(os.path.curdir, 'SQuAD2', 'dev-v2.0.json')
 #Question = {plausible_answers:Answers, question:str, id:str, answers:Answers,  is_impossible:bool}
 #Answers = [{text:str, answer_start:int}, ...]
 
-
-
 class Vocab:
     def __init__(self, special_tokens=None):
         self.w2idx = {}
@@ -222,3 +220,6 @@ question = input_.get_input_str(sample)
 answers = input_.get_answers_str(sample)
 print('input\n {}\n'.format(question))
 print('answers\n {}\n'.format(answers))
+
+
+
