@@ -12,17 +12,19 @@ from torch.utils.data.dataset import TensorDataset
 from torch.utils.data import DataLoader, SequentialSampler, RandomSampler
 #from torch.utils.tensorboard import SummaryWriter
 from tensorboardX import SummaryWriter
-from transformers import AutoTokenizer, BertForQuestionAnswering, BertForSequenceClassification, BertConfig, AdamW, get_linear_schedule_with_warmup
+from transformers import AutoTokenizer, BertModel, AlbertModel, BertForQuestionAnswering, BertForSequenceClassification, BertConfig, AdamW, get_linear_schedule_with_warmup
 from transformers.data.processors.squad import SquadResult
 from transformers.data.metrics.squad_metrics import compute_predictions_logits, get_final_text, squad_evaluate
 from transformers.modeling_utils import PreTrainedModel
 
 TRAIN_DATA_FN = os.path.join(os.path.pardir, os.path.pardir, 'SQuAD2', 'cached_train_model_384')
 EVAL_DATA_FN = os.path.join(os.path.pardir, os.path.pardir, 'SQuAD2', 'cached_dev_model_384')
-QA_MODEL_DIR = os.path.join(os.path.pardir, os.path.pardir, 'BERT-Tiny', 'output')
-SR_MODEL_DIR = os.path.join(os.path.pardir, os.path.pardir, 'BERT-Tiny', 'sr_model')
-IR_MODEL_DIR_CLS = os.path.join(os.path.pardir, os.path.pardir, 'BERT-Tiny', 'ir_model', 'ifv')
-IR_MODEL_DIR_SPAN = os.path.join(os.path.pardir, os.path.pardir, 'BERT-Tiny', 'ir_model', 'span')
+ALBERT_OUTPUT_DIR = os.path.join(os.path.pardir, os.path.pardir, 'output')
+
+ALBERT_MODEL_DIR = os.path.join(os.path.pardir, os.path.pardir, 'model', 'ALBERT-base-v1')
+ALBERT_QA_MODEL_DIR = os.path.join(os.path.pardir, os.path.pardir, 'model', 'QuestionAnswering', 'albert-base-v1')
+ALBERT_CLS_MODEL_DIR = os.path.join(os.path.pardir, os.path.pardir, 'model', 'SequenceClassification', 'albert-base-v1')
+
 
 #{version:str, data:[{title:str, paragraphs:[{qas:[Question...], context:str}, ...]}, ...]}
 #Question = {plausible_answers:Answers, question:str, id:str, answers:Answers,  is_impossible:bool}
@@ -59,23 +61,19 @@ class BERTForCLS(PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.cls_bert = BertForSequenceClassification(config)
-        self.loss = nn.BCEWithLogitsLoss()
-        self.softmax = torch.nn.Softmax(dim=-1)
-        self.layernorm = nn.LayerNorm(self.config.num_labels, self.config.layer_norm_eps)
 
     config_class = BertConfig
     base_model_prefix = 'bert'
     def forward(self, inputs, cls_target=None):
-        outputs = self.cls_bert(**inputs)
-        logits = outputs[0]
-        probs = self.softmax(logits)
-        print(probs)
-        print(self.layernorm(probs))
         if cls_target is not None:
-            logits = self.layernorm(probs)
-            return self.loss(logits[:, 1], cls_target)
+            inputs['labels'] = cls_target
+            loss, logits = self.cls_bert(**inputs)
+            inputs.pop('labels')
+            return loss, logits[:, 1] - logits[:, 0]
         else:
-            return probs[:, 1]
+            outputs = self.cls_bert(**inputs)
+            logits = outputs[0]
+            return logits[:, 1] - logits[:, 0]
 
 
 class BERTWithSketchyReader(nn.Module):
@@ -94,30 +92,30 @@ class BERTWithSketchyReader(nn.Module):
 class BERTWithIntensiveReader(nn.Module):
     def __init__(self, qa_model_dir=IR_MODEL_DIR_SPAN, ifv_model_dir=IR_MODEL_DIR_CLS):
         super().__init__()
-        self.baseline = BertForQA.from_pretrained(qa_model_dir)
+        self.span_cls = BertForQA.from_pretrained(qa_model_dir)
         self.ifv = BERTForCLS.from_pretrained(ifv_model_dir)
-        self.config = self.baseline.config
+        self.config = self.span_cls.config
 
     def save_pretrained(self, span_dir=IR_MODEL_DIR_SPAN, cls_dir=IR_MODEL_DIR_CLS):
-        self.baseline.save_pretrained(span_dir)
+        self.span_cls.save_pretrained(span_dir)
         self.ifv.save_pretrained(cls_dir)
         
     #**args, (batch), (batch), (batch)
     def forward(self, inputs, start_target=None, end_target=None, cls_target=None):     
         if all((x is not None for x in (start_target, end_target, cls_target))):
-            span_loss = self.baseline(inputs, start_target, end_target)
+            span_loss = self.span_cls(inputs, start_target, end_target)
             ifv_loss = self.ifv(inputs, cls_target)
             return ifv_loss, span_loss
         else:
-            start_logits, end_logits = self.baseline(inputs)
-            ifv_logits = self.ifv(inputs)
-            return ifv_logits, start_logits, end_logits
+            start_logits, end_logits = self.span_cls(inputs)
+            self.ifv(inputs)
+            return start_logits, end_logits
 
 class SQuAD2Data:
     def __init__(self):
-        self.batch_size = 8
+        self.batch_size = 32
         self.sequence_length = 384
-        self.hidden_size = 128
+        self.hidden_size = 768
         
         self.null_score_diff_threshold = 0.0
         self.do_lower_case=True
@@ -138,15 +136,18 @@ class SQuAD2Data:
         self.device = torch.device('cpu')
 
         adam_epsilon=1e-08
-        learning_rate=0.0003
-        weight_decay=0.0
+        learning_rate=3e-05
+        weight_decay=0.01 
 
         self.tokenizer = AutoTokenizer.from_pretrained(QA_MODEL_DIR, do_lower_case=self.do_lower_case)
+        self.baseline_model = AlbertForQuestionAnswering(BASELINE_DIR)
         self.sr_model = BERTWithSketchyReader(SR_MODEL_DIR)
         self.sr_optimizer = AdamW(self.sr_model.parameters(), lr=learning_rate, eps=adam_epsilon, weight_decay=weight_decay)
         self.ir_model = BERTWithIntensiveReader(IR_MODEL_DIR_SPAN, IR_MODEL_DIR_CLS)
         self.ir_optimizer = AdamW(self.ir_model.parameters(), lr=learning_rate, eps=adam_epsilon, weight_decay=weight_decay)
 
+        self.warmup_proportion = 0.1
+        self.weight_decay = 0.01
         self.num_train_epochs=1.0
         self.max_steps=-1
         self.max_grad_norm=1.0
@@ -186,7 +187,7 @@ class SQuAD2Data:
                 inputs = {'input_ids':batch[0], 'attention_mask':batch[1], 'token_type_ids':batch[2]}
                 feature_indices = batch[3]
                 #cls_index, p_mask = batch[4], batch[5]    
-                unanswerable = torch.tensor([int(self.features[feature_index.item()].is_impossible) for feature_index in feature_indices], dtype=torch.float)
+                unanswerable = torch.tensor([int(self.features[feature_index.item()].is_impossible) for feature_index in feature_indices], dtype=torch.long)
                 start_indices = torch.tensor([int(self.features[feature_index.item()].start_position) for feature_index in feature_indices], dtype=torch.long)
                 end_indices = torch.tensor([int(self.features[feature_index.item()].end_position) for feature_index in feature_indices], dtype=torch.long)
                 
@@ -227,7 +228,9 @@ class SQuAD2Data:
         dataloader = DataLoader(self.dataset, sampler=sampler, batch_size=self.batch_size)
         
         t_total = len(dataloader) // self.num_train_epochs
-        scheduler = get_linear_schedule_with_warmup(self.sr_optimizer, num_warmup_steps=0, num_training_steps=t_total)
+        warm_up_steps = int(t_total * self.warmup_proportion)
+
+        scheduler = get_linear_schedule_with_warmup(self.sr_optimizer, num_warmup_steps=warm_up_steps, num_training_steps=t_total)
         
         tb_writer = SummaryWriter()
         global_step = 1
@@ -281,33 +284,29 @@ class SQuAD2Data:
 
         return global_step, tr_loss / global_step
     
-    def add_results(self, feature_indices, start_logits_, end_logits_, rv_logits_=None):
+    def add_results(self, feature_indices, start_logits_, end_logits_, efv_logits_=None):
         for i, feature_index in enumerate(feature_indices):
             feature = self.features[feature_index.item()]
             unique_id = int(feature.unique_id)
             start_logits, end_logits = start_logits_[i], end_logits_[i]
-            if rv_logits_ is not None:
-                rv_noans = rv_logits_[i].item()
-                """
-                print(rv_noans)
-                start_min, start_max = start_logits[1:].min().item(), start_logits[1:].max().item()
-                end_min, end_max = end_logits[1:].min().item(), end_logits[1:].max().item()
-                print(start_logits[0].item(), end_logits[0].item())
-                print(start_max, end_max)
-                print('-' *20)
-                """"""
-                weights = softmax(torch.cat((start_logits[1:].unsqueeze(dim=1), end_logits[1:].unsqueeze(dim=1)), dim=1))
-                start_logits[1:] = minmax(start_logits[1:], start_min, start_max, start_min, ans_score * weights[:, 0])
-                end_logits[1:] = minmax(end_logits[1:], end_min, end_max, end_min, ans_score * weights[:, 1])
-                """
-                start_logits[0] = self.lambda1 * (start_logits[0] + end_logits[0])
-                end_logits[0] = self.lambda2 * rv_noans
-                #start_logits = softmax(start_logits)
-                #end_logits = softmax(end_logits)
+            if efv_logits_ is not None:
+                ext = efv_logits_[i].item()
+                self.ext_dict[unique_id] = ext
             start_logits, end_logits = to_list(start_logits), to_list(end_logits) 
             result = SquadResult(unique_id, start_logits, end_logits)
-            self.result_dict[result.unique_id] = result
+            self.result_dict[unique_id] = result
             self.results.append(result)
+
+    def rear_verification(self):
+        diff_scores = json.load(self.output_null_log_odds_file)
+        self.results = []
+        for unique_id in diff_scores:
+            rv_score = self.beta1 * diff_scores[unique_id] + self.beta2 * self.ext_dict[unique_id]
+            self.result_dict[unique_id].start_logits[0] = rv_score
+            self.result_dict[unique_id].end_logits[0] = 0.0 
+            self.results.append(self.result_dict[unique_id])
+        
+
     
     def evaluate(self, fn=EVAL_DATA_FN):
         self.load(fn)
@@ -317,8 +316,9 @@ class SQuAD2Data:
         train_iterator = trange(0, int(self.num_train_epochs), desc="Epoch", disable=False)
         self.results = []
         self.result_dict = {}
-        use_baseline_logits = False
-
+        self.ext_dict = {}
+        use_baseline = False
+        #((s1 + e1) - has) + ext
         for _ in train_iterator:
             epoch_iterator = tqdm(dataloader, desc="Iteration", disable=False)
             for step, batch in enumerate(epoch_iterator):
@@ -326,17 +326,18 @@ class SQuAD2Data:
                 inputs = {'input_ids':batch[0], 'attention_mask':batch[1], 'token_type_ids':batch[2]}
                 feature_indices = batch[3]
                 #cls_index, p_mask = batch[4], batch[5]
+                self.baseline_model.eval()
                 self.sr_model.eval()
                 self.ir_model.eval()
                 with torch.no_grad():
-                    if use_baseline_logits:   
-                        start_logits, end_logits = self.ir_model.baseline(inputs)
-                        rv_logits = None
+                    if use_baseline:
+                        efv_logits = None
+                        start_logits, end_logits = self.baseline_model(inputs)
                     else:
                         efv_logits = self.sr_model(inputs)
-                        ifv_logits, start_logits, end_logits = self.ir_model(inputs)
-                        rv_logits =  self.beta1 * efv_logits + self.beta2 * ifv_logits
-                    self.add_results(feature_indices, start_logits, end_logits, rv_logits)
+                        start_logits, end_logits = self.ir_model(inputs)
+                        
+                    self.add_results(feature_indices, start_logits, end_logits, efv_logits)
 
         self.predictions = compute_predictions_logits(
             self.examples,
@@ -352,6 +353,7 @@ class SQuAD2Data:
             self.version_2_with_negative,
             self.null_score_diff_threshold,
             self.tokenizer)
+        
 
         results = squad_evaluate(self.examples, self.predictions)
         print('After Retrospective Reader:')
@@ -403,14 +405,20 @@ def minmax(x, vmin, vmax, ymin=0, ymax=1):
     return ymin + ((ymax - ymin) * (x - vmin)) / (vmax - vmin)
 
 def main():
-
-    data = SQuAD2Data()
+    #model = BertModel.from_pretrained('bert-base-uncased')
+    #model = BertModel.from_pretrained(BERT_MODEL_DIR)
+    #model.save_pretrained(BERT_MODEL_DIR)
+    #model = AlbertModel.from_pretrained('albert-base-v1')
+    #model = AlbertModel.from_pretrained(ALBERT_MODEL_DIR)
+    #model.save_pretrained(ALBERT_MODEL_DIR)
+    #data = SQuAD2Data()
     #data.slice_(64)
     #data.load()
     
     #step, total_loss = data.train_sr()
     #print('step: {}, total loss:{:.2f}'.format(step, total_loss))
-    data.evaluate()
+    #data.evaluate()
+
     """
     
     print([0 if x not in ['[CLS]', '[SEP]'] else 1 for x in data.features[0].tokens])
