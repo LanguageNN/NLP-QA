@@ -374,7 +374,7 @@ class args:
     "Set this flag if you are using an uncased model."
     do_lower_case = True
     "Batch size per GPU/CPU for training."
-    train_batch_size = 12
+    train_batch_size = 8
     "Batch size per GPU/CPU for evaluation."
     eval_batch_size = 8
     "The initial learning rate for Adam."
