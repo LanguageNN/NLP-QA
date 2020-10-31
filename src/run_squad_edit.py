@@ -362,7 +362,7 @@ class args:
     null_score_diff_threshold = 0.0
     """The maximum total input sequence length after WordPiece tokenization. Sequences 
         longer than this will be truncated, and sequences shorter than this will be padded."""
-    max_seq_length = 512
+    max_seq_length = 384
     "When splitting up a long document into chunks, how much stride to take between chunks."
     doc_stride = 128
     "The maximum number of tokens for the question. Questions longer than this will be truncated to this length."
@@ -374,7 +374,7 @@ class args:
     "Set this flag if you are using an uncased model."
     do_lower_case = True
     "Batch size per GPU/CPU for training."
-    train_batch_size = 16
+    train_batch_size = 12
     "Batch size per GPU/CPU for evaluation."
     eval_batch_size = 8
     "The initial learning rate for Adam."
