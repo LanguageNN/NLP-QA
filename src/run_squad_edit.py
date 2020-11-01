@@ -374,7 +374,7 @@ class args:
     "Set this flag if you are using an uncased model."
     do_lower_case = True
     "Batch size per GPU/CPU for training."
-    train_batch_size = 8
+    train_batch_size = 12
     "Batch size per GPU/CPU for evaluation."
     eval_batch_size = 8
     "The initial learning rate for Adam."
@@ -412,7 +412,7 @@ class args:
     "random seed for initialization"
     seed = 42
     "multiple threads for converting example to features"
-    threads = 1
+    threads = 2
 
 def main():    
 
