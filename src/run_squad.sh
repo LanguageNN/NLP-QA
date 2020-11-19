@@ -1,4 +1,4 @@
-python run_squad_warmup_proportion.py \
+python ./run_squad_warmup_proportion.py \
  --model_type bert \
  --model_name_or_path bert-base-uncased \
  --do_train \
