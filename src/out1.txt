@@ -1,3 +1,133 @@
+BERT with no fine-tuning eval on dev 
+
+2020-11-20 23:01:58.905856: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudart.so.10.1
+11/20/2020 23:02:02 - WARNING - __main__ -   Process rank: -1, device: cuda, n_gpu: 1, distributed training: False, 16-bits training: False
+[INFO|configuration_utils.py:414] 2020-11-20 23:02:03,188 >> loading configuration file https://huggingface.co/bert-base-uncased/resolve/main/config.json from cache at /root/.cache/torch/transformers/3c61d016573b14f7f008c02c4e51a366c67ab274726fe2910691e2a761acf43e.637c6035640bacb831febcc2b7f7bee0a96f9b30c2d7e9ef84082d9f252f3170
+[INFO|configuration_utils.py:450] 2020-11-20 23:02:03,189 >> Model config BertConfig {
+  "architectures": [
+    "BertForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "gradient_checkpointing": false,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 768,
+  "initializer_range": 0.02,
+  "intermediate_size": 3072,
+  "layer_norm_eps": 1e-12,
+  "max_position_embeddings": 512,
+  "model_type": "bert",
+  "num_attention_heads": 12,
+  "num_hidden_layers": 12,
+  "pad_token_id": 0,
+  "type_vocab_size": 2,
+  "vocab_size": 30522
+}
+
+[INFO|configuration_utils.py:414] 2020-11-20 23:02:03,268 >> loading configuration file https://huggingface.co/bert-base-uncased/resolve/main/config.json from cache at /root/.cache/torch/transformers/3c61d016573b14f7f008c02c4e51a366c67ab274726fe2910691e2a761acf43e.637c6035640bacb831febcc2b7f7bee0a96f9b30c2d7e9ef84082d9f252f3170
+[INFO|configuration_utils.py:450] 2020-11-20 23:02:03,268 >> Model config BertConfig {
+  "architectures": [
+    "BertForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "gradient_checkpointing": false,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 768,
+  "initializer_range": 0.02,
+  "intermediate_size": 3072,
+  "layer_norm_eps": 1e-12,
+  "max_position_embeddings": 512,
+  "model_type": "bert",
+  "num_attention_heads": 12,
+  "num_hidden_layers": 12,
+  "pad_token_id": 0,
+  "type_vocab_size": 2,
+  "vocab_size": 30522
+}
+
+[INFO|tokenization_utils_base.py:1782] 2020-11-20 23:02:03,382 >> loading file https://huggingface.co/bert-base-uncased/resolve/main/vocab.txt from cache at /root/.cache/torch/transformers/45c3f7a79a80e1cf0a489e5c62b43f173c15db47864303a55d623bb3c96f72a5.d789d64ebfe299b0e416afc4a169632f903f693095b4629a7ea271d5a0cf2c99
+[INFO|modeling_utils.py:939] 2020-11-20 23:02:03,493 >> loading weights file https://huggingface.co/bert-base-uncased/resolve/main/pytorch_model.bin from cache at /root/.cache/torch/transformers/a8041bf617d7f94ea26d15e218abd04afc2004805632abc0ed2066aa16d50d04.faf6ea826ae9c5867d12b22257f9877e6b8367890837bd60f7c54a29633f7f2f
+[WARNING|modeling_utils.py:1047] 2020-11-20 23:02:19,310 >> Some weights of the model checkpoint at bert-base-uncased were not used when initializing BertForQuestionAnswering: ['cls.predictions.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.decoder.weight', 'cls.seq_relationship.weight', 'cls.seq_relationship.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.LayerNorm.bias']
+- This IS expected if you are initializing BertForQuestionAnswering from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing BertForQuestionAnswering from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+[WARNING|modeling_utils.py:1058] 2020-11-20 23:02:19,310 >> Some weights of BertForQuestionAnswering were not initialized from the model checkpoint at bert-base-uncased and are newly initialized: ['qa_outputs.weight', 'qa_outputs.bias']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+11/20/2020 23:02:33 - INFO - __main__ -   Training/evaluation parameters Namespace(adam_epsilon=1e-08, cache_dir='', config_name='', data_dir='NLP-QA/src/squad2/', device=device(type='cuda'), do_eval=True, do_lower_case=True, do_train=False, doc_stride=128, eval_all_checkpoints=False, evaluate_during_training=False, fp16=False, fp16_opt_level='O1', gradient_accumulation_steps=4, lang_id=0, learning_rate=3e-05, local_rank=-1, logging_steps=500, max_answer_length=30, max_grad_norm=1.0, max_query_length=64, max_seq_length=512, max_steps=-1, model_name_or_path='bert-base-uncased', model_type='bert', n_best_size=20, n_gpu=1, no_cuda=False, null_score_diff_threshold=0.0, num_train_epochs=2.0, output_dir='NLP-QA/src/output/', overwrite_cache=False, overwrite_output_dir=False, per_gpu_eval_batch_size=8, per_gpu_train_batch_size=8, predict_file=None, save_steps=500, seed=42, server_ip='', server_port='', threads=1, tokenizer_name='', train_file=None, verbose_logging=False, version_2_with_negative=True, warmup_proportion=0.1, weight_decay=0.01)
+11/20/2020 23:02:33 - INFO - __main__ -   Loading checkpoint bert-base-uncased for evaluation
+11/20/2020 23:02:33 - INFO - __main__ -   Evaluate the following checkpoints: ['bert-base-uncased']
+[INFO|configuration_utils.py:414] 2020-11-20 23:02:33,695 >> loading configuration file https://huggingface.co/bert-base-uncased/resolve/main/config.json from cache at /root/.cache/torch/transformers/3c61d016573b14f7f008c02c4e51a366c67ab274726fe2910691e2a761acf43e.637c6035640bacb831febcc2b7f7bee0a96f9b30c2d7e9ef84082d9f252f3170
+[INFO|configuration_utils.py:450] 2020-11-20 23:02:33,695 >> Model config BertConfig {
+  "architectures": [
+    "BertForMaskedLM"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "gradient_checkpointing": false,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 768,
+  "initializer_range": 0.02,
+  "intermediate_size": 3072,
+  "layer_norm_eps": 1e-12,
+  "max_position_embeddings": 512,
+  "model_type": "bert",
+  "num_attention_heads": 12,
+  "num_hidden_layers": 12,
+  "pad_token_id": 0,
+  "type_vocab_size": 2,
+  "vocab_size": 30522
+}
+
+[INFO|modeling_utils.py:939] 2020-11-20 23:02:33,774 >> loading weights file https://huggingface.co/bert-base-uncased/resolve/main/pytorch_model.bin from cache at /root/.cache/torch/transformers/a8041bf617d7f94ea26d15e218abd04afc2004805632abc0ed2066aa16d50d04.faf6ea826ae9c5867d12b22257f9877e6b8367890837bd60f7c54a29633f7f2f
+[WARNING|modeling_utils.py:1047] 2020-11-20 23:02:37,508 >> Some weights of the model checkpoint at bert-base-uncased were not used when initializing BertForQuestionAnswering: ['cls.predictions.bias', 'cls.predictions.transform.dense.weight', 'cls.predictions.transform.dense.bias', 'cls.predictions.decoder.weight', 'cls.seq_relationship.weight', 'cls.seq_relationship.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.LayerNorm.bias']
+- This IS expected if you are initializing BertForQuestionAnswering from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing BertForQuestionAnswering from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+[WARNING|modeling_utils.py:1058] 2020-11-20 23:02:37,508 >> Some weights of BertForQuestionAnswering were not initialized from the model checkpoint at bert-base-uncased and are newly initialized: ['qa_outputs.weight', 'qa_outputs.bias']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+11/20/2020 23:02:37 - INFO - __main__ -   Creating features from dataset file at NLP-QA/src/squad2/
+100% 35/35 [00:04<00:00,  7.96it/s]
+convert squad examples to features: 100% 11873/11873 [02:28<00:00, 80.17it/s]
+add example index and unique id: 100% 11873/11873 [00:00<00:00, 838903.19it/s]
+11/20/2020 23:05:11 - INFO - __main__ -   Saving features into cached file NLP-QA/src/squad2/cached_dev_bert-base-uncased_512
+11/20/2020 23:05:25 - INFO - __main__ -   ***** Running evaluation  *****
+11/20/2020 23:05:25 - INFO - __main__ -     Num examples = 12022
+11/20/2020 23:05:25 - INFO - __main__ -     Batch size = 8
+Evaluating: 100% 1503/1503 [07:42<00:00,  3.25it/s]
+11/20/2020 23:13:08 - INFO - __main__ -     Evaluation done in total 462.710176 secs (0.038489 sec per example)
+[INFO|squad_metrics.py:389] 2020-11-20 23:13:08,433 >> Writing predictions to: NLP-QA/src/output/predictions_.json
+[INFO|squad_metrics.py:391] 2020-11-20 23:13:08,433 >> Writing nbest to: NLP-QA/src/output/nbest_predictions_.json
+[INFO|squad_metrics.py:393] 2020-11-20 23:13:08,433 >> Writing null_log_odds to: NLP-QA/src/output/null_odds_.json
+11/20/2020 23:14:20 - INFO - __main__ -   Results: {'exact': 0.32005390381537946, 'f1': 4.2156081280920725, 'total': 11873, 'HasAns_exact': 0.4048582995951417, 'HasAns_f1': 8.207138209318016, 'HasAns_total': 5928, 'NoAns_exact': 0.23549201009251472, 'NoAns_f1': 0.23549201009251472, 'NoAns_total': 5945, 'best_exact': 50.07159100480081, 'best_exact_thresh': 0.0, 'best_f1': 50.07264381369494, 'best_f1_thresh': 0.0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OLD
+-------------------------------------------------------------------------------------------------------------
 Baseline, With Reader, With Reader + minmax scale ans_logits on span, rv difference
 exact	            f1                 total  HasAns_exact        HasAns_f1          HasAns_total  NoAns_exact         NoAns_f1            NoAns_total  best_exact         best_exact_thresh  best_f1            best_f1_thresh
 37.631601111766194  40.15939093712248  11873  10.020242914979757  15.0830716255829   5928          65.16400336417158   65.16400336417158   5945         50.08001347595385  0.0                50.0861899547994   0.0
