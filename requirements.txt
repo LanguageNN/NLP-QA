@@ -1,3 +1,2 @@
-torch, nltk
-
+torch, transformers
 
